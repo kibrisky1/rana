@@ -1,0 +1,8 @@
+export default {
+  id:"battleship", name:"Battleship", category:"strategy", description:"Affonda la flotta nemica.",
+  players:{min:2,max:2}, duration:"5-15 min", supportsCompetitive:true,
+  init:({players}) => { const mk=()=>{ const g=Array(100).fill(null); const ships=[5,4,3,3,2]; let id=0; for(const len of ships){ let placed=false; while(!placed){ const horiz=Math.random()<.5; const r=Math.floor(Math.random()*(horiz?10:10-len+1)); const c=Math.floor(Math.random()*(horiz?10-len+1:10)); const cells=[]; for(let i=0;i<len;i++){ const rr=horiz?r:r+i, cc=horiz?c+i:c; cells.push(rr*10+cc); } if(cells.every(x=>g[x]===null)){ cells.forEach(x=>g[x]={ship:id}); id++; placed=true; } } } return g; }; const boards={}; players.forEach(p=>boards[p.id]={grid:mk(),shots:new Set(),hits:new Set()}); return {phase:"playing",boards,turn:players[0].id,players:players.map(p=>p.id),winnerId:null}; },
+  action:(s,pid,a)=>{ if(s.phase!=="playing"||pid!==s.turn) return false; const opp=s.players.find(id=>id!==pid); const x=a.x,y=a.y; if(!Number.isInteger(x)||!Number.isInteger(y)||x<0||x>9||y<0||y>9) return false; const idx=y*10+x; const oppBoard=s.boards[opp]; if(oppBoard.shots.has(idx)) return false; oppBoard.shots.add(idx); if(oppBoard.grid[idx]) oppBoard.hits.add(idx); const oppShips=new Set(oppBoard.grid.filter(Boolean).map(c=>c.ship)); const sunk=[...oppShips].every(sid=>!oppBoard.grid.some((cell,i)=>cell&&cell.ship===sid&&!oppBoard.shots.has(i))); if(oppShips.size>0&&sunk){ s.phase="complete"; s.winnerId=pid; return true; } s.turn=opp; return true; },
+  tick:()=>false,
+  result:(s)=>({complete:true,winnerId:s.winnerId,rankings:s.winnerId?[{playerId:s.winnerId,rank:1}]:[]})
+};

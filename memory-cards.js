@@ -1,8 +1,0 @@
-export default {
-  id:"memory-cards", name:"Memory Cards", category:"memory", description:"Abbina tutte le coppie.",
-  players:{min:2,max:8}, duration:"3-8 min", supportsCompetitive:true,
-  init:({players}) => { const ids=[...Array(8).keys(),...Array(8).keys()]; for(let i=ids.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[ids[i],ids[j]]=[ids[j],ids[i]];} const scores={}; players.forEach(p=>scores[p.id]=0); return {phase:"playing",cards:ids.map(v=>({v,matched:false})),flipped:[],turn:players[0].id,players:players.map(p=>p.id),scores,flipBackAt:null,winnerId:null}; },
-  action:(s,pid,a)=>{ if(s.phase!=="playing"||pid!==s.turn) return false; const i=a.index; if(!Number.isInteger(i)||i<0||i>15||s.cards[i].matched||s.flipped.includes(i)) return false; s.flipped.push(i); if(s.flipped.length===2){ const [x,y]=s.flipped; if(s.cards[x].v===s.cards[y].v){ s.cards[x].matched=s.cards[y].matched=true; s.scores[pid]++; s.flipped=[]; if(s.cards.every(c=>c.matched)){ s.phase="complete"; const max=Math.max(...Object.values(s.scores)); const winners=Object.entries(s.scores).filter(([,v])=>v===max).map(([k])=>k); s.winnerId=winners.length===1?winners[0]:null; } } else { s.flipBackAt=Date.now()+1200; } } return true; },
-  tick:(s,now)=>{ if(s.flipBackAt&&now>=s.flipBackAt){ s.flipped=[]; s.flipBackAt=null; s.turn=s.players.find(id=>id!==s.turn); return true; } return false; },
-  result:(s)=>{ const max=Math.max(...Object.values(s.scores)); const ranked=Object.entries(s.scores).sort(([,a],[,b])=>b-a).map(([pid],i)=>({playerId:pid,rank:i+1})); return {complete:true,winnerId:ranked[0][1]===max&&Object.values(s.scores).filter(v=>v===max).length===1?ranked[0].playerId:null,rankings:ranked}; }
-};
